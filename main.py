@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 
-size_populacao = 100
+size_populacao = 3
 
 
 """Matriz com as distâncias das cidades
@@ -20,17 +20,24 @@ cidades = np.array([[0, 17, 3, 35, 43, 26, 44, 5, 8, 9], [17, 0, 20, 31, 47, 11,
                     [8, 8, 11, 33, 46, 19, 48, 13, 0, 16], [9, 23, 9, 32, 37, 30, 35, 6, 16, 0]])
 
 
+class Individuo:
+    def __init__(self, sequencia, distancia):
+        self.sequencia = sequencia
+        self.distancia = distancia
+
+
 """Função que cria aleatoriamente indivíduos para a primeira geração"""
 
 
 def populacao_inicial():
-    populacao = np.zeros((size_populacao, 10))
+    populacao = []
 
     for i in range(size_populacao):
         numeros = range(0, 9)
-        individuo = random.sample(numeros, 9)
-        individuo.insert(0, 9)
-        populacao[i] = individuo
+        gene = random.sample(numeros, 9)
+        gene.insert(0, 9)
+        dist = calcula_distancia(gene)
+        populacao.append(Individuo(gene, dist))
 
     return populacao
 
@@ -38,40 +45,38 @@ def populacao_inicial():
 """Função que calcula a distância total percorrida por cada individuo"""
 
 
-def calcula_distancia(individuo):
-    distancias = np.zeros(size_populacao)
-    for k in range(size_populacao):
-        soma = 0
-        i = 0
-        for i in range(9):
-            a = int(individuo[k][i])
-            b = int(individuo[k][i+1])
-            soma = soma + cidades[a][b]
-        c = int(individuo[k][i-1])
-        soma = soma + cidades[c][9]
-        distancias[k] = soma
+def calcula_distancia(gene):
+    soma = 0
+    i = 0
+    for i in range(9):
+        a = int(gene[i])
+        b = int(gene[i+1])
+        soma = soma + cidades[a][b]
+    c = int(gene[i-1])
+    soma = soma + cidades[c][9]
+    distancia = soma
 
-    return distancias
+    return distancia
 
 
 """"Funão que recolhe a menor distância daquela população"""
 
 
-def min_geracao(distancias):
-    minimo = distancias[0]
+def min_geracao(individuo):
+    minimo = individuo[0].distancia
     for i in range(size_populacao):
-        if distancias[i] < minimo:
-            minimo = distancias[i]
+        if individuo[i].distancia < minimo:
+            minimo = individuo[i].distancia
     return minimo
 
 
 """Função que calcula a distância média das novas gerações"""
 
 
-def media_geracao(distancias):
+def media_geracao(individuo):
     media = 0
     for i in range(size_populacao):
-        media = media + distancias[i]
+        media = media + individuo[i].distancia
     media = media/size_populacao
     return int(media)
 
@@ -79,13 +84,11 @@ def media_geracao(distancias):
 def main():
 
     populacao = populacao_inicial()
-    print(populacao)
-    distancias = calcula_distancia(populacao)
-    print(distancias)
-    minimo = min_geracao(distancias)
-    print(minimo)
-    media = media_geracao(distancias)
-    print(media)
+    for i in range(size_populacao):
+        print(populacao[i].sequencia, " --- ", populacao[i].distancia)
+
+    print("Individuo mais proximo do objetivo: ", min_geracao(populacao))
+    print("Media da populacao: ", media_geracao(populacao))
 
 
 if __name__ == '__main__':
