@@ -1,12 +1,13 @@
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import math
 
 '''Declaração de constantes'''
-size_populacao = 100
-controle_crescimento_superior = 0.9
-controle_crescimento_inferior = 0.6
-taxa_de_mutacao = 0.1
+size_populacao = 150
+controle_crescimento_superior = 0.8
+controle_crescimento_inferior = 0.4
+taxa_de_mutacao = 0.05
 
 
 """Matriz com as distâncias das cidades
@@ -105,27 +106,14 @@ def min_geracao(individuo):
     return Individuo(gene, minimo)
 
 
-""""Funão que recolhe a maior distância daquela população"""
-
-
-def max_geracao(individuo):
-    maximo = individuo[0].distancia
-    gene = []
-    for i in range(len(individuo)):
-        if individuo[i].distancia > maximo:
-            maximo = individuo[i].distancia
-            gene = individuo[i].sequencia
-    return Individuo(gene, maximo)
-
-
 '''Probabilidade de reproducao'''
 
 
 def reproduz(tamanho):
     if tamanho > size_populacao:
         return random.random() < controle_crescimento_inferior
-    if tamanho < size_populacao/2:
-        return random.random() < 1
+    if tamanho <= 10:
+        return True
     return random.random() < controle_crescimento_superior
 
 
@@ -156,6 +144,9 @@ def procriacao_aleatoria(ancestral1, ancestral2):
 
 def cria_nova_geracao_procriacao_aleatoria(individuo):
     nova_geracao = []
+    populacao_pequena = False
+    if len(individuo) < 10:
+        populacao_pequena = True
     #   Os 10% primeiros são os melhores candidatos e vão gerar novos filhos a partir do restante da populaçao
     k = int(size_populacao*0.1)
     if k == 0:
@@ -165,19 +156,22 @@ def cria_nova_geracao_procriacao_aleatoria(individuo):
         num_filhos = 0
         for i in range(k + 1, len(individuo)):
 
-            if num_filhos >= 10 + int(10/size_populacao):
+            # Caso o reprodutor já tenha atingido um limite superior de filhos
+            # o laço é quebrado - isso garante que não ocorra super população
+            if num_filhos >= int(10*math.exp(-size_populacao/1000)) and not populacao_pequena:
                 break
-            if reproduz(len(individuo)):
+            if reproduz(len(individuo)) or populacao_pequena:
                 filho1 = procriacao_aleatoria(individuo[j].sequencia, individuo[i].sequencia)
                 distancia_filho1 = calcula_distancia(filho1)
-                gera_mutacao(filho1)
+                filho1 = gera_mutacao(filho1)
                 nova_geracao.append(Individuo(filho1, distancia_filho1))
                 num_filhos = num_filhos + 1
 
-            if reproduz(len(individuo)):
+            # Para garantir que a população não diminua, cada reprodutor tem a chance de fazer até 2 descendentes
+            if reproduz(len(individuo)) or populacao_pequena:
                 filho2 = procriacao_aleatoria(individuo[i].sequencia, individuo[j].sequencia)
                 distancia_filho2 = calcula_distancia(filho2)
-                gera_mutacao(filho2)
+                filho2 = gera_mutacao(filho2)
                 nova_geracao.append(Individuo(filho2, distancia_filho2))
                 num_filhos = num_filhos + 1
 
@@ -186,7 +180,7 @@ def cria_nova_geracao_procriacao_aleatoria(individuo):
     return nova_geracao
 
 
-'''Função de aleatoriedade'''
+'''Função de aleatoriedade para mutação'''
 
 
 def mutacao():
@@ -208,14 +202,11 @@ def gera_mutacao(individuo):
     return individuo
 
 
-def sobrevive():
-    return random.random() < 0.1
+'''Funçao que roda o algoritmo genético com combinação aleatoria de genes'''
 
 
-def main():
-
+def roda_procriacao_aleatoria():
     geracao = populacao_inicial()
-    print(min_geracao(geracao).distancia)
     vec_x = []
     vec_y = []
     plt.show()
@@ -227,22 +218,114 @@ def main():
     plt.xlabel("Geração")
     plt.title("Procriação Aleatório")
     texto = str()
-
     minimo = min_geracao(geracao).distancia
     for i in range(0, 1000):
         geracao = cria_nova_geracao_procriacao_aleatoria(geracao)
         if min_geracao(geracao).distancia < minimo:
             minimo = min_geracao(geracao).distancia
             texto = "Geração: " + str(i) + "\nMínimo: " + str(minimo)
-        print(i+1, "Tamanho da geracao: ", len(geracao), "Melhor candidato: ", minimo)
+        # print("Geração: ", i, " - Tamanho: ", len(geracao))
         vec_x.append(i)
         vec_y.append(min_geracao(geracao).distancia)
         line.set_xdata(vec_x)
         line.set_ydata(vec_y)
         plt.draw()
     plt.text(600, 200, texto)
+    return plt.show()
 
+
+'''Função que faz a troca dos piores com os melhores pares e gera filhos'''
+
+
+def reproducao_troca_duplas(ancestral1, ancestral2):
+    filho_gene1 = []
+
+    for i in range(0, 3):
+        filho_gene1.append(ancestral1[i])
+
+    filho_gene2 = [item for item in ancestral2 if item not in filho_gene1]
+
+    filho = filho_gene1 + filho_gene2
+
+    return filho
+
+
+'''Função que cria nova geração com reprodução de troca de duplas'''
+
+
+def gera_nova_geracao_troca_dupla(individuo):
+    nova_geracao = []
+    populacao_pequena = False
+    if len(individuo) < 10:
+        populacao_pequena = True
+    #   Os 10% primeiros são os melhores candidatos e vão gerar novos filhos a partir do restante da populaçao
+    k = int(size_populacao * 0.1)
+    if k == 0:
+        k = 1
+
+    for j in range(0, k):
+        num_filhos = 0
+        for i in range(k + 1, len(individuo)):
+
+            # Caso o reprodutor já tenha atingido um limite superior de filhos
+            # o laço é quebrado - isso garante que não ocorra super população
+            if num_filhos >= int(10 * math.exp(-size_populacao / 1000)) and not populacao_pequena:
+                break
+            if reproduz(len(individuo)) or populacao_pequena:
+                filho1 = reproducao_troca_duplas(individuo[j].sequencia, individuo[i].sequencia)
+                distancia_filho1 = calcula_distancia(filho1)
+                filho1 = gera_mutacao(filho1)
+                nova_geracao.append(Individuo(filho1, distancia_filho1))
+                num_filhos = num_filhos + 1
+
+            # Para garantir que a população não diminua, cada reprodutor tem a chance de fazer até 2 descendentes
+            if reproduz(len(individuo)) or populacao_pequena:
+                filho2 = reproducao_troca_duplas(individuo[i].sequencia, individuo[j].sequencia)
+                distancia_filho2 = calcula_distancia(filho2)
+                filho2 = gera_mutacao(filho2)
+                nova_geracao.append(Individuo(filho2, distancia_filho2))
+                num_filhos = num_filhos + 1
+
+        nova_geracao = ordena_populacao(nova_geracao)
+
+    return nova_geracao
+
+
+'''Funçao que roda o algoritmo genético com combinação de pares'''
+
+
+def roda_procriacao_troca_dupla():
+    geracao = populacao_inicial()
+    vec_x = []
+    vec_y = []
     plt.show()
+    eixos = plt.gca()
+    eixos.set_xlim(-10, 1000)
+    eixos.set_ylim(100, 250)
+    line, = eixos.plot(vec_x, vec_y, 'r-')
+    plt.ylabel("Distância")
+    plt.xlabel("Geração")
+    plt.title("Procriação por troca de pares")
+    texto = str()
+    minimo = min_geracao(geracao).distancia
+    for i in range(0, 1000):
+        geracao = gera_nova_geracao_troca_dupla(geracao)
+        if min_geracao(geracao).distancia < minimo:
+            minimo = min_geracao(geracao).distancia
+            texto = "Geração: " + str(i) + "\nMínimo: " + str(minimo)
+        vec_x.append(i)
+        vec_y.append(min_geracao(geracao).distancia)
+        line.set_xdata(vec_x)
+        line.set_ydata(vec_y)
+        plt.draw()
+    plt.text(600, 200, texto)
+    return plt.show()
+
+
+def main():
+
+    roda_procriacao_aleatoria()
+    roda_procriacao_troca_dupla()
 
 
 if __name__ == '__main__':
