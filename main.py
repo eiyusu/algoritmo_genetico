@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import math
 
 '''Declaração de constantes'''
-size_populacao = 150
+size_populacao = 50
 controle_crescimento_superior = 0.8
 controle_crescimento_inferior = 0.4
 taxa_de_mutacao = 0.05
@@ -56,16 +56,15 @@ def populacao_inicial():
 
 def calcula_distancia(gene):
     soma = 0
-    i = 0
     for i in range(9):
         a = int(gene[i])
         b = int(gene[i+1])
         soma = soma + cidades[a][b]
-    c = int(gene[i-1])
+
+    c = int(gene[9])
     #   Necessário considerar a distância da última cidade para a primeira
     soma = soma + cidades[c][9]
     distancia = soma
-
     return distancia
 
 
@@ -98,11 +97,12 @@ def ordena_populacao(individuo):
 
 def min_geracao(individuo):
     minimo = individuo[0].distancia
-    gene = []
+    gene = individuo[0].sequencia
     for i in range(len(individuo)):
         if individuo[i].distancia < minimo:
             minimo = individuo[i].distancia
             gene = individuo[i].sequencia
+
     return Individuo(gene, minimo)
 
 
@@ -221,9 +221,12 @@ def roda_procriacao_aleatoria():
     minimo = min_geracao(geracao).distancia
     for i in range(0, 1000):
         geracao = cria_nova_geracao_procriacao_aleatoria(geracao)
+
         if min_geracao(geracao).distancia < minimo:
-            minimo = min_geracao(geracao).distancia
-            texto = "Geração: " + str(i) + "\nMínimo: " + str(minimo)
+            indiv = min_geracao(geracao)
+            minimo = indiv.distancia
+            seq = indiv.sequencia
+            texto = "Geração: " + str(i) + "\nMínimo: " + str(minimo) + "\n" + str(seq)
         # print("Geração: ", i, " - Tamanho: ", len(geracao))
         vec_x.append(i)
         vec_y.append(min_geracao(geracao).distancia)
@@ -311,8 +314,10 @@ def roda_procriacao_troca_dupla():
     for i in range(0, 1000):
         geracao = gera_nova_geracao_troca_dupla(geracao)
         if min_geracao(geracao).distancia < minimo:
-            minimo = min_geracao(geracao).distancia
-            texto = "Geração: " + str(i) + "\nMínimo: " + str(minimo)
+            indiv = min_geracao(geracao)
+            minimo = indiv.distancia
+            seq = indiv.sequencia
+            texto = "Geração: " + str(i) + "\nMínimo: " + str(minimo) + "\n" + str(seq)
         vec_x.append(i)
         vec_y.append(min_geracao(geracao).distancia)
         line.set_xdata(vec_x)
